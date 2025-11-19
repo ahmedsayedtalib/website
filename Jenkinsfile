@@ -15,10 +15,10 @@ pipeline {
 
         stage('Checkout Code') {
             steps {
-                git branch: 'main', credentialsId: GITHUB_CRED, url: 'https://github.com/ahmedsayedtalib/website.git'
                 script {
+                    // Use the workspace that Jenkins already checked out
                     env.IMAGE_TAG = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
-                    echo "Docker image tag: ${IMAGE_TAG}"
+                    echo "Docker image tag: ${env.IMAGE_TAG}"
                 }
             }
             post {
@@ -51,9 +51,15 @@ pipeline {
         stage('Docker Build & Push') {
             steps {
                 withCredentials([usernamePassword(credentialsId: DOCKER_CRED, usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh "echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin"
-                    sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
-                    sh "docker push ${IMAGE_NAME}:${IMAGE_TAG}"
+                    script {
+                        retry(3) {
+                            sh """
+                            echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin
+                            docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+                            docker push ${IMAGE_NAME}:${IMAGE_TAG}
+                            """
+                        }
+                    }
                 }
             }
             post {
@@ -65,10 +71,10 @@ pipeline {
         stage('Update K8s Manifests') {
             steps {
                 script {
-                    // Update image in kustomize overlay for dev and prod
                     sh """
                     sed -i "s|image: ${IMAGE_NAME}:.*|image: ${IMAGE_NAME}:${IMAGE_TAG}|g" k8s/overlays/dev/patch-image.yaml
                     sed -i "s|image: ${IMAGE_NAME}:.*|image: ${IMAGE_NAME}:${IMAGE_TAG}|g" k8s/overlays/prod/patch-image.yaml
+
                     git config user.email "jenkins@ci.local"
                     git config user.name "Jenkins CI"
                     git add k8s/overlays/dev/patch-image.yaml k8s/overlays/prod/patch-image.yaml
@@ -87,10 +93,14 @@ pipeline {
             steps {
                 withKubeConfig([credentialsId: KUBERNETES_CRED, contextName: 'minikube']) {
                     echo "Resources in DEV namespace:"
-                    sh "kubectl get deployments,services,ingress -n dev -o wide | grep ${IMAGE_NAME} || echo 'No matching resources in dev'"
+                    sh """
+                    kubectl get deployments,services,ingress -n dev -o wide || echo 'No resources found in dev'
+                    """
 
                     echo "Resources in PROD namespace:"
-                    sh "kubectl get deployments,services,ingress -n prod -o wide | grep ${IMAGE_NAME} || echo 'No matching resources in prod'"
+                    sh """
+                    kubectl get deployments,services,ingress -n prod -o wide || echo 'No resources found in prod'
+                    """
                 }
             }
             post {
@@ -102,5 +112,7 @@ pipeline {
 
     post {
         always { echo 'Pipeline finished' }
+        success { echo '✅ Pipeline completed successfully' }
+        failure { echo '❌ Pipeline failed' }
     }
 }
