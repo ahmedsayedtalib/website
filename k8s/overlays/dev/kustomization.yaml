@@ -18,4 +18,4 @@ patches:
   - path: patch-service.yaml
     target:
       kind: Service
-      name: website-service
+      name: website-dev-service
