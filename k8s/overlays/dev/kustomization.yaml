@@ -6,6 +6,7 @@ resources:
 namespace: dev
 
 patches:
-  - patch-replicas.yaml
-  - patch-image.yaml
-  - patch-ingress.yaml
+  - path: patch-replicas.yaml
+  - path: patch-image.yaml
+  - path: patch-ingress.yaml
+
