@@ -7,10 +7,6 @@ resources:
 namespace: dev
 
 patches:
-  - path: patch-replicas.yaml
-    target:
-      kind: Deployment
-      name: website
   - path: patch-image.yaml
     target:
       kind: Deployment
@@ -19,3 +15,7 @@ patches:
     target:
       kind: Ingress
       name: website-ingress
+  - path: patch-service.yaml
+    target:
+      kind: Service
+      name: website
