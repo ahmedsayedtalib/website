@@ -1,6 +1,14 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
 metadata:
   name: website-ingress
+  namespace: dev
+  labels:
+    app: website
+  annotations:
+    kubernetes.io/ingress.class: nginx
 spec:
+  ingressClassName: nginx
   rules:
     - host: dev.ahmedsayedtalib.local
       http:
