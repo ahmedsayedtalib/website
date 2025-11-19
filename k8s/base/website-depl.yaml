@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: website
+  labels:
+    app: website
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: website
+  template:
+    metadata:
+      name: website
+      labels:
+        app: website
+    spec:
+      containers:
+      - image: ahmedsayedtalib/website:latest
+        name: website
+        ports:
+        - containerPort: 80

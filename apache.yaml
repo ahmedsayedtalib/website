@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mypersonalwebsite  
+  labels: 
+    app: mywebsite
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mywebsite
+  template:
+    metadata:
+      name: mypersonalwebsite
+      labels:
+        app: mywebsite
+    spec:
+      containers:
+      - name: mypersonalwebsite
+        image: docker.io/ahmedsayedtalib/mypersonalwebsite:v1.1
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 200m
+            memory: 512Mi
+      tolerations:
+      - key: "color"
+        operator: "Equal"
+        value: "green"
+        effect: "NoSchedule"
+      - key: "color"
+        operator: "Equal"
+        value: "blue"
+        effect: "NoSchedule"
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: name
+                operator: In
+                values:
+                - node1
+                - node2
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mywebsite-service
+  labels: 
+    app: mywebsite
+spec:
+  selector:
+    app: mywebsite
+  type: NodePort
+  ports:
+  - port: 80
+    targetPort: 80
+    nodePort: 31000
