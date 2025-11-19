@@ -24,16 +24,19 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv('sonarqube') {
-                    withCredentials([string(credentialsId: SONAR_CRED, variable: 'SONAR_TOKEN')]) {
-                        sh """
-                        ${sonarHome}/bin/sonar-scanner \
-                            -Dsonar.projectKey=website \
-                            -Dsonar.host.url=${SONAR_URL} \
-                            -Dsonar.token=${SONAR_TOKEN} \
-                            -Dsonar.sources=. \
-                            -Dsonar.inclusions=**/*.html,**/*.css,**/*.js
-                        """
+                script {
+                    def sonarHome = 'sonar-scanner' // define sonar scanner path
+                    withSonarQubeEnv('sonarqube') {
+                        withCredentials([string(credentialsId: SONAR_CRED, variable: 'SONAR_TOKEN')]) {
+                            sh """
+                            ${sonarHome}/bin/sonar-scanner \
+                                -Dsonar.projectKey=website \
+                                -Dsonar.host.url=${SONAR_URL} \
+                                -Dsonar.token=${SONAR_TOKEN} \
+                                -Dsonar.sources=. \
+                                -Dsonar.inclusions=**/*.html,**/*.css,**/*.js
+                            """
+                        }
                     }
                 }
             }
