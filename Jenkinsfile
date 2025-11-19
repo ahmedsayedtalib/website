@@ -16,14 +16,26 @@ pipeline {
         stage('Checkout Code') {
             steps {
                 git branch: 'main', credentialsId: GITHUB_CRED, url: 'https://github.com/ahmedsayedtalib/website.git'
-                script {
-                    env.IMAGE_TAG = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
-                    echo "Docker image tag: ${IMAGE_TAG}"
-                }
             }
             post {
                 success { echo '✅ Git checkout succeeded' }
                 failure { echo '❌ Git checkout failed' }
+            }
+        }
+
+        stage('Set IMAGE_TAG') {
+            steps {
+                script {
+                    env.IMAGE_TAG = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+                    if (!env.IMAGE_TAG) {
+                        error("Failed to get Git commit hash for IMAGE_TAG")
+                    }
+                    echo "Docker image tag: ${IMAGE_TAG}"
+                }
+            }
+            post {
+                success { echo '✅ IMAGE_TAG set successfully' }
+                failure { echo '❌ Failed to set IMAGE_TAG' }
             }
         }
 
