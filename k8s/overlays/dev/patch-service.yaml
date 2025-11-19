@@ -6,4 +6,4 @@ spec:
   ports:
     - port: 80
       targetPort: 80
-      nodePort: 31110  # dev-specific port
+      nodePort: 31114 
