@@ -13,10 +13,10 @@ pipeline {
 
     stages {
 
-        stage('Checkout Code') {
+        stage('Set IMAGE_TAG') {
             steps {
                 script {
-                    // Use the workspace that Jenkins already checked out
+                    // Use the existing checkout repo
                     env.IMAGE_TAG = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
                     echo "Docker image tag: ${env.IMAGE_TAG}"
                 }
@@ -32,7 +32,7 @@ pipeline {
                 withSonarQubeEnv('sonar-scanner') {
                     withCredentials([string(credentialsId: SONAR_CRED, variable: 'SONAR_TOKEN')]) {
                         sh """
-                        ${sonarHome}/bin/sonar-scanner \
+                        sonar-scanner \
                             -Dsonar.projectKey=website \
                             -Dsonar.host.url=${SONAR_URL} \
                             -Dsonar.login=${SONAR_TOKEN} \
@@ -93,14 +93,10 @@ pipeline {
             steps {
                 withKubeConfig([credentialsId: KUBERNETES_CRED, contextName: 'minikube']) {
                     echo "Resources in DEV namespace:"
-                    sh """
-                    kubectl get deployments,services,ingress -n dev -o wide || echo 'No resources found in dev'
-                    """
+                    sh "kubectl get deployments,services,ingress -n dev -o wide || echo 'No resources found in dev'"
 
                     echo "Resources in PROD namespace:"
-                    sh """
-                    kubectl get deployments,services,ingress -n prod -o wide || echo 'No resources found in prod'
-                    """
+                    sh "kubectl get deployments,services,ingress -n prod -o wide || echo 'No resources found in prod'"
                 }
             }
             post {
