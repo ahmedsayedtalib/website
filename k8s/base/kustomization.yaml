@@ -5,6 +5,8 @@ resources:
   - website-depl.yaml
   - website-service.yaml
   - website-ingress.yaml
-
+  
 labels:
-  app: website
+  - name: app
+    value: website
+
