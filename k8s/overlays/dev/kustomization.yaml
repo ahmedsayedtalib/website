@@ -6,6 +6,8 @@ resources:
 
 namespace: dev
 
+namePrefix: dev-
+
 patches:
   - path: patch-image.yaml
     target:
@@ -18,4 +20,4 @@ patches:
   - path: patch-service.yaml
     target:
       kind: Service
-      name: website-dev-service
+      name: website-service

@@ -12,4 +12,4 @@ spec:
     - port: 80
       targetPort: 80
       protocol: TCP
-      nodePort: 31110    
+      nodePort: 31110  # default base port, will patch per environment

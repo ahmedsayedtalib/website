@@ -1,12 +1,9 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: website-dev-service
+  name: website-service
 spec:
-  selector: 
-    app: website
-  type: NodePort
   ports:
     - port: 80
       targetPort: 80
-      nodePort: 31114 
+      nodePort: 31114

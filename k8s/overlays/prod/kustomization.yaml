@@ -6,17 +6,17 @@ resources:
 
 namespace: prod
 
+namePrefix: prod-
+
 patches:
   - path: patch-image.yaml
     target:
       kind: Deployment
       name: website
-
   - path: patch-ingress.yaml
     target:
       kind: Ingress
       name: website-ingress
-
   - path: patch-service.yaml
     target:
       kind: Service
