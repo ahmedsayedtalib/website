@@ -8,4 +8,4 @@ spec:
     spec:
       containers:
         - name: website
-          image: ahmedsayedtalib/website:dev
+          image: ahmedsayedtalib/website:885d54f
