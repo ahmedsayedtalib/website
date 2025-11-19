@@ -19,5 +19,5 @@ patches:
 
   - path: patch-service.yaml
     target:
-      kind: Ingress
+      kind: Service
       name: website-service
