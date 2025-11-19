@@ -13,12 +13,12 @@ pipeline {
 
     stages {
 
-        stage('Set IMAGE_TAG') {
+        stage('Checkout Code') {
             steps {
+                git branch: 'main', credentialsId: GITHUB_CRED, url: 'https://github.com/ahmedsayedtalib/website.git'
                 script {
-                    // Use the existing checkout repo
                     env.IMAGE_TAG = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
-                    echo "Docker image tag: ${env.IMAGE_TAG}"
+                    echo "Docker image tag: ${IMAGE_TAG}"
                 }
             }
             post {
@@ -29,13 +29,13 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv('sonar-scanner') {
+                withSonarQubeEnv('sonarqube') {
                     withCredentials([string(credentialsId: SONAR_CRED, variable: 'SONAR_TOKEN')]) {
                         sh """
-                        sonar-scanner \
+                        ${sonarHome}/bin/sonar-scanner \
                             -Dsonar.projectKey=website \
                             -Dsonar.host.url=${SONAR_URL} \
-                            -Dsonar.login=${SONAR_TOKEN} \
+                            -Dsonar.token=${SONAR_TOKEN} \
                             -Dsonar.sources=. \
                             -Dsonar.inclusions=**/*.html,**/*.css,**/*.js
                         """
@@ -51,15 +51,11 @@ pipeline {
         stage('Docker Build & Push') {
             steps {
                 withCredentials([usernamePassword(credentialsId: DOCKER_CRED, usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    script {
-                        retry(3) {
-                            sh """
-                            echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin
-                            docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
-                            docker push ${IMAGE_NAME}:${IMAGE_TAG}
-                            """
-                        }
-                    }
+                    sh """
+                    echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin
+                    docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+                    docker push ${IMAGE_NAME}:${IMAGE_TAG}
+                    """
                 }
             }
             post {
@@ -93,10 +89,10 @@ pipeline {
             steps {
                 withKubeConfig([credentialsId: KUBERNETES_CRED, contextName: 'minikube']) {
                     echo "Resources in DEV namespace:"
-                    sh "kubectl get deployments,services,ingress -n dev -o wide || echo 'No resources found in dev'"
+                    sh "kubectl get deployments,services,ingress -n dev -o wide | grep ${IMAGE_NAME} || echo 'No matching resources in dev'"
 
                     echo "Resources in PROD namespace:"
-                    sh "kubectl get deployments,services,ingress -n prod -o wide || echo 'No resources found in prod'"
+                    sh "kubectl get deployments,services,ingress -n prod -o wide | grep ${IMAGE_NAME} || echo 'No matching resources in prod'"
                 }
             }
             post {
