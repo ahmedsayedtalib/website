@@ -3,9 +3,9 @@ kind: Kustomization
 resources:
   - ../../base
 
-namespace: website-dev
+namespace: dev
 
-patchesStrategicMerge:
+patches:
   - patch-replicas.yaml
   - patch-image.yaml
   - patch-ingress.yaml

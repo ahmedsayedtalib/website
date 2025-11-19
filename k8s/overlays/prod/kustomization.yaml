@@ -6,7 +6,7 @@ resources:
 
 namespace: website-prod
 
-patchesStrategicMerge:
+patches:
   - patch-replicas.yaml
   - patch-image.yaml
   - patch-ingress.yaml
