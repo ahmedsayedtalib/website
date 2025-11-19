@@ -8,34 +8,17 @@ pipeline {
         DOCKER_CRED      = 'docker-cred'
         IMAGE_NAME       = 'ahmedsayedtalib/website'
         KUBERNETES_CRED  = 'kubernetes-cred'
-        IMAGE_TAG        = '' // will set dynamically
     }
 
     stages {
 
         stage('Checkout Code') {
             steps {
-                checkout scm
+                git branch: 'main', credentialsId: GITHUB_CRED, url: 'https://github.com/ahmedsayedtalib/website.git'
             }
             post {
                 success { echo '✅ Git checkout succeeded' }
                 failure { echo '❌ Git checkout failed' }
-            }
-        }
-
-        stage('Set IMAGE_TAG') {
-            steps {
-                script {
-                    env.IMAGE_TAG = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
-                    echo "Docker image tag: ${IMAGE_TAG}"
-                    if (!env.IMAGE_TAG) {
-                        error("Failed to get Git commit hash for IMAGE_TAG")
-                    }
-                }
-            }
-            post {
-                success { echo '✅ IMAGE_TAG set successfully' }
-                failure { echo '❌ Failed to set IMAGE_TAG' }
             }
         }
 
@@ -62,23 +45,20 @@ pipeline {
 
         stage('Docker Build & Push') {
             steps {
-                withCredentials([usernamePassword(credentialsId: DOCKER_CRED, usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh """
-                    echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin
-                    docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
-                    docker push ${IMAGE_NAME}:${IMAGE_TAG}
-                    """
-                }
-            }
-            post {
-                success { echo '✅ Docker image pushed successfully' }
-                failure { echo '❌ Docker image push failed' }
-            }
-        }
-
-        stage('Update K8s Manifests') {
-            steps {
                 script {
+                    // Generate Docker image tag here
+                    def IMAGE_TAG = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+                    echo "Docker image tag: ${IMAGE_TAG}"
+
+                    withCredentials([usernamePassword(credentialsId: DOCKER_CRED, usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                        sh """
+                        echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin
+                        docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+                        docker push ${IMAGE_NAME}:${IMAGE_TAG}
+                        """
+                    }
+
+                    // Update Kubernetes manifests immediately after pushing
                     sh """
                     sed -i "s|image: ${IMAGE_NAME}:.*|image: ${IMAGE_NAME}:${IMAGE_TAG}|g" k8s/overlays/dev/patch-image.yaml
                     sed -i "s|image: ${IMAGE_NAME}:.*|image: ${IMAGE_NAME}:${IMAGE_TAG}|g" k8s/overlays/prod/patch-image.yaml
@@ -92,8 +72,8 @@ pipeline {
                 }
             }
             post {
-                success { echo '✅ K8s manifests updated with new image tag' }
-                failure { echo '❌ Failed to update manifests' }
+                success { echo '✅ Docker image pushed and K8s manifests updated' }
+                failure { echo '❌ Docker/K8s stage failed' }
             }
         }
 
